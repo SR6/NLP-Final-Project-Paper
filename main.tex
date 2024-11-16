@@ -23,6 +23,9 @@ Approach was to work with Contrast and Adversarial sets
 
 \section*{Model behavior}
 
+Initially trained on either snli dataset (570k elements) for 3 epochs. Achieved 89.7\% accuracy on the evaluation set. Found low confidence on errors but skewed to neutral.
+Retrained on a very small subset (10k) for 5 epochs not realizing how big the dataset was, then immediately retrained again on half the dataset (275k) for 5 epochs. Now my accuracy on eval was 88.6\% but the data analysis showed more skew towards irrelevant.
+
 \section*{Analysis of errors}
 
 Stored incorrect predictions into a jsonl file for analysis. Used mathplotlib and other libraries to work on model.
