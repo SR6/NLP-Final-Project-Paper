@@ -15,31 +15,56 @@
 \section*{Abstract}
 All human things are subject to decay. And when fate summons, Monarchs must obey.
 
-\section*{Introduction}
+\section{Introduction}
+\subsection{Background}
 
 Used an electra small model (expand on what that is) with HuggingFace Transformer Trainer (expand on that)
+
+\subsection{Dataset}
 Ran on SNLI dataset. Achieved 89.7\% accuracy without any changes
 Approach was to work with Contrast and Adversarial sets
-
-\section*{Model behavior}
-
+\subsection{Understanding Artifacts}
+\section{Model}
+\subsection{Pre-trained Model}
+explain what the small electra is.
 Initially trained on either snli dataset (570k elements) for 3 epochs. Achieved 89.7\% accuracy on the evaluation set. Found low confidence on errors but skewed to neutral.
+\subsection{Evaluation Trials}
 Retrained on a very small subset (10k) for 5 epochs not realizing how big the dataset was, then immediately retrained again on half the dataset (275k) for 5 epochs. Now my accuracy on eval was 88.6\% but the data analysis showed more skew towards irrelevant.
 
-\section*{Analysis of errors}
+Retrained on entire dataset for 5 epochs and am finding higher confidence on wrong predictions now. Longer wasn't better.
 
+\section{Analysis of errors}
+\subsection{Hypothesis-Premise SNLI}
 Stored incorrect predictions into a jsonl file for analysis. Used mathplotlib and other libraries to work on model.
 What analysis did I do on the outputs? Can i get dataset cartography to work?
 
-All incorrect predictions came with super low confidence. Nothing higher than 33\%
-Incorrect labels scewed more to neutral, entailment and irrelevant were both lower than gold label standard totals.
+All incorrect predictions came with super low confidence. Nothing higher than 40\% when trained only 3 epochs. When trained 5 epochs it went up significantly to nearly 50\% on some of the outputs.
+
+there seems to be a length issue. If the premise is long and the hypothesis entailed in the early half of the sentence, model often predicts neutral.
+
+Incorrect labels skewed more to neutral, entailment and irrelevant were both lower than gold label standard totals.
 
 Seeing some premises that are long with the hypothesis clearly supported/entailed by the later half of the sentence. 
 
-Don't forget to add the chart on length of premise and length of hypothesis of the incorrect predictions
-\section*{Attempted Model Updates}
+Some pairs require some inference (they were throwing tomatoes at each other - they were having a food fight)
 
-\section*{Conclusion}
+Trained a single epoch on a glue:mnli dataset and accuracy dropped to 71.8\%
+
+Don't forget to add the chart on length of premise and length of hypothesis of the incorrect predictions
+
+Ran small contrastive dataset in eval mode. Model only achieved 44\% accuracy.
+\subsection{Contrast Sets}
+Created pairs of premise/hypothesis sets where one was the original and the other changed a word or some small phrasing to change the label. Evaluated the model on these pairs. Accuracy dropped to 44\% 
+
+\section{Experiments}
+\subsection{Contrastive DataSets}
+
+Contrastive sets are for evaluation to pinpoint weaknesses in the model learning. Have to use this info to figure out how to fix the model.
+
+Data augmentation with this contrastive set used to fine-tune the model.
+
+
+\section{Conclusion}
 
 \bibliographystyle{apalike}
 \bibliography{sample}
