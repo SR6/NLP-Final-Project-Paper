@@ -1,31 +1,66 @@
-\documentclass{article}
-\usepackage{blindtext}
+\pdfoutput=1
+\documentclass[11pt]{article}
+\usepackage{ACL2023}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{inconsolata}
+
+%\documentclass{article}
+\usepackage{natbib}
 \usepackage{multicol}
 \setlength{\columnsep}{1cm}
-\title{NLP Fixing Stuff}
-\author{Stacy Roberts}
+\title{Improving Natural Language Inference with Contrastive Fine-tuning on ELECTRA Small}
+\author{Stacy Roberts \\ EID: sr55278 \\robers23@utexas.edu}
 
 \date{November 2024}
 
 \begin{document}
 \maketitle
 
-\begin{multicols*}{2}
+%\begin{multicols*}{2}
 
 \section*{Abstract}
-All human things are subject to decay. And when fate summons, Monarchs must obey.
+Natural Language models have used metrics such as test set accuracy to verify a model's performance in the real world. Utilizing test sets which are intimately tied to the training sets can lead to a high accuracy rating but not translate to similarly positive generalized performance. It has been found that models tend to find Data Artifacts in the body of training data, which are spurious connections between text that don't translate to generalized language well. The intent of this paper is to utilize contrastive datasets, designed not to alter the overall intent of the original corpus, to improve the ELECTRA small's understanding of underlying language and increase its accuracy on the contrastive set while not decreasing the accuracy of the original corpus.
 
 \section{Introduction}
 \subsection{Background}
+Natural Language Inference (NLI) has become a popular task set for understanding how Large Language Models (LLM) interpret language. Models trained on a large corpus of data tend to perform well on test data built from the original training set, but do not perform as well in more complex language relationships.  NLI is a task set which categorizes the logical relationships between sentences.  It is used to mitigate the tendency of a model to rely on data artifacts inferred from the test data which are incorrect and impose a negative outcome on interpretation of more complex sentence pairings. The NLI task attempts to clarify where a model is relying on these artifacts, allowing training updates to improve a model's performance. In this paper we utilize dataset augmentation to improve the Electra small model
 
-Used an electra small model (expand on what that is) with HuggingFace Transformer Trainer (expand on that)
 
-\subsection{Dataset}
+
+\subsection{Motivation}
+Importance of efficient, smaller models in real-world applications.
+How contrastive fine-tuning might improve semantic understanding.
+
+\subsection{Contributions or Understanding Artifacts}
+Summarize the novel aspects of your work:
+Fine-tuning ELECTRA-small on SNLI.
+Incorporating contrastive datasets for enhanced NLI performance.
+Empirical evaluation on GLUE and custom benchmarks.
+\section{Related Works}
+Natural Language Inference:
+Review NLI datasets like SNLI, MultiNLI, and other benchmarks.
+Discuss existing approaches (e.g., BERT, RoBERTa, and ELECTRA).
+Contrastive Learning in NLP:
+Initial fine-tune training of our Electra small model was performed on the Stanford Natural Language Inference (SNLI) Corpus dataset. This dataset consists of around 570k premise/hypothesis pairs. \citep{snlicorpus}
+
 Ran on SNLI dataset. Achieved 89.7\% accuracy without any changes
-Approach was to work with Contrast and Adversarial sets
-\subsection{Understanding Artifacts}
+Approach was to work with Contrastive sets in an attempt to push similar premise/hypothesis pairs closer together and contradictory pairs further apart. This should increase the model's ability to correctly predict entailment of these difficult boundary cases.
+
+Provide a brief overview of contrastive learning methods and their applications in semantic understanding.
+Cite recent works leveraging contrastive learning for improving NLI or related tasks.
+Smaller Language Models:
+Discuss the importance of small models for resource-constrained settings.
+Highlight the trade-offs between model size, accuracy, and generalization.
+
 \section{Model}
 \subsection{Pre-trained Model}
+
+We began with a pre-trained Electra Small Discriminator model from HuggingFace. For the NLI (Natural Language Inference) task, the ElectraForSequenceClassification head was selected as the fine tuning head. 
+
 explain what the small electra is.
 Initially trained on either snli dataset (570k elements) for 3 epochs. Achieved 89.7\% accuracy on the evaluation set. Found low confidence on errors but skewed to neutral.
 \subsection{Evaluation Trials}
@@ -35,6 +70,7 @@ Retrained on entire dataset for 5 epochs and am finding higher confidence on wro
 
 \section{Analysis of errors}
 \subsection{Hypothesis-Premise SNLI}
+
 Stored incorrect predictions into a jsonl file for analysis. Used mathplotlib and other libraries to work on model.
 What analysis did I do on the outputs? Can i get dataset cartography to work?
 
@@ -48,26 +84,38 @@ Seeing some premises that are long with the hypothesis clearly supported/entaile
 
 Some pairs require some inference (they were throwing tomatoes at each other - they were having a food fight)
 
-Trained a single epoch on a glue:mnli dataset and accuracy dropped to 71.8\%
+Trained a single epoch on a glue:mnli dataset and accuracy dropped to 71.8\%  but after the refresh on snli and contrastive set this dropped to 69\%
 
 Don't forget to add the chart on length of premise and length of hypothesis of the incorrect predictions
 
 Ran small contrastive dataset in eval mode. Model only achieved 44\% accuracy.
 \subsection{Contrast Sets}
-Created pairs of premise/hypothesis sets where one was the original and the other changed a word or some small phrasing to change the label. Evaluated the model on these pairs. Accuracy dropped to 44\% 
+Created pairs of premise/hypothesis sets where one was the original and the other changed a word or some small phrasing to change the label. Evaluated the model on these pairs. Accuracy dropped to 44\%  Provide examples here
 
 \section{Experiments}
+\subsection{SNLI}
+
+Describe the SNLI dataset (it is balanced) \cite{dataAug}
 \subsection{Contrastive DataSets}
+
+Cosine similarity used generally to build a contrastive dataset. Intention is to pull similar pairs (entailment) closer together and push opposite pairs (contradictive) further apart.
 
 Contrastive sets are for evaluation to pinpoint weaknesses in the model learning. Have to use this info to figure out how to fix the model.
 
 Data augmentation with this contrastive set used to fine-tune the model.
+Add chart that shows accuracy with snli vs accuracy with contrast set (two bars just 89.7\% and 44.5\%)
 
+I'm looking for increased accuracy on the contrast set after the retraining.
+
+Took an snli trained (5 epochs, full dataset), trained on a small contrast dataset (61 elements from original failed predictions).  Achieved a 78\% accuracy on snli, but increased the output of the contrast set to 72.6\%
+
+retrain on 10k samples of snli accuracy on snli is: 89.8
+retrain on contrast_data.jsonl with lr of 1e-6, eval on snli: 89.87  contrast: 77.4
 
 \section{Conclusion}
 
 \bibliographystyle{apalike}
-\bibliography{sample}
-\end{multicols*}
+\bibliography{references}
+%\end{multicols*}
 
 \end{document}
