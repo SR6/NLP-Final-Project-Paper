@@ -99,9 +99,8 @@ A strong indication of a contradictory hypothesis is the prevalence of negation 
     \label{fig:}
 \end{figure}
 The figure above shows the probability word mass of each class within the SNLI corpus. Note that the entailed class has the highest probability of less than 7 word tokens on average per hypothesis, while neutral has the widest distribution skewed towards the highest number of tokens of any of the classifications.
-
-\section{Related Works}
-Natural Language Inference tasks have inspired a number of standard datasets, each slightly different in intended task.  Stanford's NLI (SNLI) is the original dataset for NLI testing consisting of about 570k sentence pairs.  It was built from Flickr photo descriptions as well as human written hypothesis/premise pairs. The dataset is balanced between the three classes of entailment, neutral, and contradiction.  It was built to be a basis and starting point for NLI testing.
+\subsection{Evaluation Metric Explanations}
+Natural Language Inference tasks have inspired a number of standard datasets, each slightly different in intended task.  Stanford's NLI (SNLI) is the original dataset for NLI testing containing about 570k sentence pairs.  It was built from Flickr30k image dataset which contained photo descriptions of the pictures.  The hypotheses were then human generated via crowd sourcing responses. The dataset is balanced between the three classes of entailment, neutral, and contradiction, although it does contain spelling errors.  It was built to be a basis and starting point for NLI testing. \citealp{dataAug}
 
 MultiNLI (MNLI) expanded upon the SNLI dataset by including genres outside of the original set. It consists of about 433k sentence pairs across ten distinct genres of written and spoken text. MNLI is not a balanced dataset across genres. The dataset is also split into matched and unmatched sentence pairs. Matched indicates the pairs came from the same genre, while unmatched indicates they came from different genres.  This dataset was introduced in 2018 to expand upon the weaknesses of the SNLI dataset. \citealp{williams2018broadcoveragechallengecorpussentence}
 
@@ -113,7 +112,7 @@ Benchmark testing for language models generally revolves around accuracy, which 
 \text{Accuracy} = \frac{\text{total correct}}{\text{total size of testset}}
 \end{equation*}
 
-In an unbalanced test set this metric doesn't reflect enough information regarding the model's weaknesses between different classes. However, SNLI is a balanced dataset so accuracy is generally useful metric although cannot be relied upon alone.
+In an unbalanced test set this metric doesn't reflect enough information regarding the model's weaknesses between different classes. However, since SNLI is a balanced dataset accuracy is a useful metric although cannot be relied upon alone in order to identify model weaknesses.
 
 F1 score is useful in unbalanced datasets or where we need to know the percent of false positives/false negatives.  Precision is the accuracy of positive predictions, while Recall is how well the model can correctly identify positive predictions.
 \begin{equation*}
@@ -128,86 +127,84 @@ F1 score is useful in unbalanced datasets or where we need to know the percent o
 
 In the case of NLI, this metric is useful in determining how effectively the model is identifying relevant information while ignoring irrelevant information.  In our testing is was found that within the SNLI dataset this metric was extremely close to the accuracy, as expected due to the balanced nature of the dataset.  When evaluating the contrast data set, it was more differential from accuracy because the contrast set was not as balanced as the original.
 
-Lastly, confidence scores are also extremely useful in identifying how much a model is relying on data artifacts to make decisions. When a model mispredicts with high confidence there is likely a pattern which can be discerned to focus training around.
+Lastly, confidence scores are also extremely useful in identifying how much a model is relying on data artifacts to make decisions. When a model mispredicts with high confidence there is likely an identifiable pattern which can be discerned and around which one can focus training. Confidence is calculated as the probability of each class from the model output, with the probability of the true label returned as the model confidence for that prediction.
+\begin{equation*}
+\text{Confidence} = \frac{e^{\text{Model Logits}}}{\sum e^{\text{Model logits}}}
+\end{equation*}
 
-Existing approaches to improving NLI tasks for models such as ELECTRA include utilizing adversarial datasets to challenge a model's heuristics \citealp{adversarial1} or to find universal triggers that always make the model predict incorrectly. \citealp{wallace2021universaladversarialtriggersattacking}
+\section{Related Works}
+Existing approaches to improving NLI tasks for models such as ELECTRA utilize some form of debiasing methods to remove the spurious artifacts learned by a model.
 
-Some studies use Checklist for task agnostic testing of model behaviors. Checklist is a tool which helps fully test a model on multiple tasks. In this case it can be used to identify artifacts \citealp{checklist}
+Adversarial training is one debiasing method utilized to improve model NLI. 
+ These datasets are created specifically to challenge a model's heuristics \citealp{adversarial1} or to find universal triggers that always make the model predict incorrectly. \citealp{wallace2021universaladversarialtriggersattacking}  One must be careful with how adversarial the perturbations are lest it get too aggressive and reduce the model's ability to understand language.
 
-Others use contrast datasets to perturb the input in ways which illustrate where the model is having difficulty separating different classifications, possibly due to reliance on artifacts.  \citealp{localdecisionboundaries}
+Another option is to utilize Checklist for task agnostic testing of model behaviors. Checklist is a tool which helps fully test a model on multiple tasks as defined by the user. In this case it can be used to identify artifacts by controlled perturbing specific linguistic features. \citealp{checklist}
 
-Contrastive Learning in NLP:
-Initial fine-tune training of our Electra small model was performed on the Stanford Natural Language Inference (SNLI) Corpus dataset. This dataset consists of around 570k premise/hypothesis pairs. \citealp{snlicorpus}
-
-Ran on SNLI dataset. Achieved 89.7\% accuracy without any changes
-Approach was to work with Contrastive sets in an attempt to push similar premise/hypothesis pairs closer together and contradictory pairs further apart. This should increase the model's ability to correctly predict entailment of these difficult boundary cases.
-
+Contrast datasets are similar to adversarial training, but their intention is to more clearly identify the difficult pivot points between similar inputs. The intention here is to perturb the hypothesis in ways which illustrate where the model is having difficulty separating different classifications, possibly due to reliance on artifacts.  \citealp{localdecisionboundaries}
 
 \section{Model}
 \subsection{Pre-trained Model}
 
-We began with a pre-trained Electra Small Discriminator model from HuggingFace. For the NLI (Natural Language Inference) task, the ElectraForSequenceClassification head was selected as the fine tuning head. 
+We began with a pre-trained Electra Small Discriminator model from HuggingFace. For the NLI (Natural Language Inference) task, the ElectraForSequenceClassification head was selected as the fine tuning head.
 
-explain what the small electra is.
-Initially trained on either snli dataset (570k elements) for 3 epochs. Achieved 89.7\% accuracy on the evaluation set. Found low confidence on errors but skewed to neutral.
+ELECTRA small has a vocabulary size of ~30k, with an embedding size of 128, hidden size of 256 with 12 hidden layers, and 4 attention heads.  It is significantly smaller than the regular ELECTRA or other similar models. While this allows for faster and more accessible training, there is a small trade off on its ability to understand more complex tasks or handle large datasets.
+
+Initially ELECTRA small was fine-tune trained on the SNLI dataset for 3 epochs. With just this additional training the model was able to achieve 89\% accuracy on the evaluation set. 
+
+Retraining the model on the full SNLI dataset for 5 epochs but only on half the dataset decreased the model accuracy to 88.6\%, indicating that the amount of the dataset used in training was at least as important as the number of epochs it was trained over.  
+
+Evaluating the model predictions demonstrated some very high confidence mispredictions, largely skewing toward predicting neutral when incorrect.
+
 \subsection{Evaluation Trials}
-Retrained on a very small subset (10k) for 5 epochs not realizing how big the dataset was, then immediately retrained again on half the dataset (275k) for 5 epochs. Now my accuracy on eval was 88.6\% but the data analysis showed more skew towards irrelevant.
+In order to identify where the model was having difficulty discerning classification, we altered the code to save all incorrectly predicted premise/hypothesis pairs, including their gold label, model output prediction array, and predicted label to a file.
 
-Retrained on entire dataset for 5 epochs and am finding higher confidence on wrong predictions now. Longer wasn't better.
+Given the understanding of data artifacts relying on the length of the hypothesis to determine neutral classification, we evaluated the frequency of average number of tokens in the hypothesis across the mispredicted set. 
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.5\linewidth]{FigurePremiseHypoWordCountFrequency.png}
+    \caption{Frequency of Number of Word Tokens in Mispredictions after SNLI fine tune only}
+    \label{fig:EarlyTokenCount}
+\end{figure}
+The SNLI dataset as a whole has the most number of premises in the 10-15 token range and hypothesis in the 5-10 word token range. The mispredictions weren't that different from this same pattern, being slightly above on the premise, but in the same range for the hypothesis.
 
-\section{Analysis of errors}
-\subsection{Hypothesis-Premise SNLI}
+Next, confidence was calculated and added to the output file for each misprediction. Initially the high confidence errors were used to hand build the contrast set. While this did make some changes to the model, it was not the most effective set to start with.  It made much more sense to start with the low confidence errors since those should be easier to perturb in the correct direction.
 
-Stored incorrect predictions into a jsonl file for analysis. Used mathplotlib and other libraries to work on model.
-What analysis did I do on the outputs? 
-
-
-All incorrect predictions came with super low confidence. Nothing higher than 40\% when trained only 3 epochs. When trained 5 epochs it went up significantly to nearly 50\% on some of the outputs.
-
-there seems to be a length issue. If the premise is long and the hypothesis entailed in the early half of the sentence, model often predicts neutral.
-
-Incorrect labels skewed more to neutral, entailment and irrelevant were both lower than gold label standard totals.
-
-Seeing some premises that are long with the hypothesis clearly supported/entailed by the later half of the sentence. 
-
-Some pairs require some inference (they were throwing tomatoes at each other - they were having a food fight)
-
-Trained a single epoch on a glue:mnli dataset and accuracy was 71.8\%  but after the refresh on snli and contrastive set this dropped to 69\%
-
-Don't forget to add the chart on length of premise and length of hypothesis of the incorrect predictions
-
-Ran small contrastive dataset in eval mode. Model only achieved 44\% accuracy.
-
-Used filtering on incorrect predictions to see if there was a word token issue (was it more likely to be wrong when there were more word tokens) see chart.  
-
-did count of how many of each class were predicted incorrectly. Started with an imbalance skewed toward neutral. Calculated confidence on each misprediction and went after the high confidence. This turned out to not be a good path given these were harder to shift.
-
-Decided to go after low confidence ones. This helped increase the contrast eval score, but didn't change much of the snli accuracy even pulling it down a bit.
-
-realized after plotting confidence per class that there was a nice drop off on contrast and neutral, but entailment had a significant bump in percent of confidence rather than just trailing off. The entailment mispredicts went more often to contra instead of neutral.
-
-Added to contrast set with all the contra which predicted as entailed. Didn't see much change in accuracy, but the contradiction per class was significant change. Now there was a massive spike on the low confidence and all other ranges were very low for all three classes.
-
+Visual inspection illustrated a noticeable volume of failures when the premise was a compound sentence and the hypothesis was clearly entailed by the first half and not the second.  
 \begin{table}[h!]
     \centering
     \begin{tabularx}{0.45\textwidth} { 
   | >{\raggedright\arraybackslash}X 
-  | >{\centering\arraybackslash}X
   | >{\raggedright\arraybackslash}X | }
     \hline
-    Dataset & Accuracy & F1 \\
-    \hline\hline
-        contrast & 50.9 & 50.54 \\
+        Premise & A group of people plays a game on the floor of a living room while a TV plays in the background.\\
         \hline
-       snli & 89.24 & 89.24 \\
-        \hline
-        glue & 69.1 & 69.0\\
+        Hypothesis & A group of people are sitting on the floor.\\
         \hline
     \end{tabularx}
-    \caption{Model ratings after contrast set}
-    \label{tab:whoknows13}
+    \caption{Example of long premise with early entailment}
+    \label{tab:1sthalfentailment}
 \end{table}
-Decided to add in all the entailment mispredicted as contra to contrast set. initial eval of this set on current model was 46.5\% accuracy. Significant change in confidence on entailment. Fairly even until 40\% now (bad)
+There were also examples where the hypothesis used the same adjectives and nouns as the premise, but not in the same way or attached to the same nouns in the hypothesis. Where the model should have predicted contradiction, it predicted entailment from reliance on the words but not the meaning of the sentence.
+\begin{table}[h!]
+    \centering
+    \begin{tabularx}{0.45\textwidth} { 
+  | >{\raggedright\arraybackslash}X 
+  | >{\raggedright\arraybackslash}X | }
+    \hline
+        Premise & A man in a blue shirt, khaki shorts, ball cap and white socks and loafers walking behind a group of people walking down a stone walkway with a water bottle in his left hand.\\
+        \hline
+        Hypothesis & A man in a blue shirt, khaki shorts, ball cap and blue socks and loafers walking behind a group of people walking down a stone walkway with a water bottle in his left hand.\\
+        \hline
+    \end{tabularx}
+    \caption{Example of same words but different meanings}
+    \label{tab:samewordswrongmeaning}
+\end{table}
+We also found a number of pairs which required some inference to predict correctly. A human would never have difficulty understanding that throwing any food item was a food fight, but the model did not understand that (i.e. "they were throwing tomatoes at each other" - "they were having a food fight").
+
+Utilizing these visual inspections and the confidence scores, along with filtering the data for specific groupings of errors (entailment as contradiction and vice versa, low confidence scores, etc), a contrast dataset was hand built.  Taking the original hypothesis and adding two more that perturb the hypothesis in a manner to bring the similar labels closer together and different labels further apart.  Examples can be found in the Contrast Sets section.
+\section{Analysis of errors}
+\subsection{Testing Procedure and Results}
+After initial fine tuning training, the model was evaluated against the SNLI and GLUE benchmarks. As a baseline the accuracy and F1 scores of each were as follows:
 \begin{table}[h!]
     \centering
     \begin{tabularx}{0.45\textwidth} { 
@@ -215,56 +212,188 @@ Decided to add in all the entailment mispredicted as contra to contrast set. ini
   | >{\centering\arraybackslash}X
   | >{\raggedright\arraybackslash}X | }
     \hline
-    Dataset & Accuracy & F1 \\
-    \hline\hline
-        contrast & 46.5 & 46.9 \\
+        Test set & Accuracy & F1 Score\\
         \hline
-       contrast w/train & 85.8 & 85.6 \\
+        SNLI & 89\% & 89\%\\
         \hline
-        snli no refresh & 87.5 & 87.3\\
-        \hline
-        glue & 64.6 & 62.7 \\
+        GLUE:MNLI & 71\% & 71\%\\
         \hline
     \end{tabularx}
-    \caption{Model ratings after contrast set entailment no snli refresh}
-    \label{tab:whoknows14}
+    \caption{Baseline Fine Tuning on SNLI Accuracy/F1 Scores}
+    \label{tab:basescores}
+\end{table}
+
+Counting the incorrect labels demonstrated a tendency toward neutral, with entailment and contradictory both lower than gold label standard totals.
+
+Initial contrast data set was build from the high confidence errors. It contained about 50 sentence pairs, where the original was kept and a perturbed version which altered the label was added. This proved to be a bad path to start with as the high confidence predictions are harder to move. However, after creating this set and doing an evaluation on the model, the accuracy significantly dropped, to about 44\%.  This is as expected given these were the pairs the model struggled with, and no new training had been done to improve performance.
+
+Upon researching how confidence best interacted with contrast testing, we decided to add in low confidence errors prior to further testing and adding data augmentation. Our contrast set was now around 70 entries. This set was used for data augmentation training. The model was trained on this contrast set for 3 epochs, then evaluated again on the contrast and SNLI sets. The SNLI accuracy was lower, but the contrast accuracy increased significantly.
+
+\begin{table}[h!]
+    \centering
+    \begin{tabularx}{0.45\textwidth} { 
+  | >{\raggedright\arraybackslash}X 
+  | >{\centering\arraybackslash}X
+  | >{\raggedright\arraybackslash}X | }
+    \hline
+        Test set & Accuracy & F1 Score\\
+        \hline
+        SNLI & 78\% & 78\%\\
+        \hline
+        Contrast & 72.6\% & 72.5\%\\
+        \hline
+    \end{tabularx}
+    \caption{After Data Augmentation Fine Tuning with Contrast set}
+    \label{tab:scores1}
+\end{table}
+Fine tune training with just the small Contrast set was likely causing major shifts on the model weights, which influenced the drop in SNLI accuracy. To combat this, the model was given a refresh training on a small subset of the SNLI dataset, which yielded a high 89.8\% accuracy on the SNLI dataset.
+
+After the SNLI refresh, the model was then retrained on the Contrast dataset, but the learning rate was held constant to prevent the small dataset from making major changes to the model weights. Given the learning rate during training on the SNLI datset was on the order 1e-5, it was decided to set the learning rate to 1e-6 for the Contrast refresh. This yield no degradation in the SNLI accuracy, but increased the Contrast set accuracy.
+\begin{table}[h!]
+    \centering
+    \begin{tabularx}{0.45\textwidth} { 
+  | >{\raggedright\arraybackslash}X 
+  | >{\centering\arraybackslash}X
+  | >{\raggedright\arraybackslash}X | }
+    \hline
+        Test set & Accuracy & F1 Score\\
+        \hline
+        SNLI & 89.6\% & 89.5\%\\
+        \hline
+        Contrast & 77.4\% & 77.3\%\\
+        \hline
+    \end{tabularx}
+    \caption{SNLI Refresh, Contrast Refresh with constant learning rate}
+    \label{tab:scores2}
+\end{table}
+
+The final two additions to the contrast set included focusing on contradiction predicted as entailment and entailment predicted as contradiction. This expanded the Contrast set to about 560 sentence pairs. Again followed the pattern of evaluating on the contrast set, refreshing the model training on a subset of SNLI, refreshing with constant low learning rate on the Contrast set, and then evaluating. Each time the evaluation on the Contrast set without any additional training was around 46-49\% prior to retraining and refresh.  After retrain and refresh there were small increases in the GLUE:MNLI test, but the SNLI was able to nearly fully recover and the Contrast evaluation increased significantly each training. 
+\begin{table}[h!]
+    \centering
+    \begin{tabularx}{0.45\textwidth} { 
+  | >{\raggedright\arraybackslash}X 
+  | >{\centering\arraybackslash}X
+  | >{\raggedright\arraybackslash}X | }
+    \hline
+        Test set & Accuracy & F1 Score\\
+        \hline
+        SNLI & 89.44\% & 89.45\%\\
+        \hline
+        Contrast & 80.9\% & 80.8\%\\
+        \hline
+        Glue:MNLI & 69.0 & 69.0\\
+        \hline
+    \end{tabularx}
+    \caption{Final SNLI Refresh, Contrast Refresh with constant learning rate}
+    \label{tab:scores3}
 \end{table}
 
 \subsection{Contrast Sets}
-The incorrectly predicted premise/hypothesis pairs from training were stored in a file, along with the logits produced by the model for each entailment, neutral, and contradictory, and both the gold and predicted labels. The logits were converted to probabilities using a softmax. Next the confidence of the model in its prediction was calculated. Model confidence is a useful metric to explore where the model is relying on data artifacts over language inference. A low confidence is generally easier to perturb and move the model to correctly identify classification than a high confidence mis-prediction. 
+Contrast Sets are best described as pairing a premise with multiple hypotheses which either pull similar classification pairs closer together, or push dissimilar classification pairs further apart in an attempt to clarify the decision boundary for the model. \citealp{sanwal2024evaluatinglargelanguagemodels}
 
-Using the confidence score, we built a small contrast dataset by hand, minorly perturbing the hypothesis to alter the label of the premise/hypothesis pair on the pairs with high confidence.   
+Mathematically using Cosine similarity is the best way to determine classification similarity between hypotheses. This metric will evaluate to a number between 0 and 1, where the lower the number the more similar the sentences.  Given the size of the SNLI dataset, we decided to work with the model's errors and hand create a Contrast dataset with the same intention.
 
-Created pairs of premise/hypothesis sets where one was the original and the other changed a word or some small phrasing to change the label. Evaluated the model on these pairs. Accuracy dropped to 44\%  Provide examples here
+Attacking the high confidence errors first, we added in the original sentence pair and then one which was perturbed to generate a different label.
+\begin{table}[h!]
+    \centering
+    \begin{tabularx}{0.45\textwidth} { 
+  | >{\raggedright\arraybackslash}X 
+  | >{\raggedright\arraybackslash}X | }
+    \hline
+        Premise & A man in a green jersey and rollerskates stumbles as a man in a black jersey appears to collide with him.\\
+        \hline
+        Original Hypothesis & They both fall to the ground.\\
+        \hline
+        Hypothesis 1 & The man falls to the ground.\\
+        \hline
+    \end{tabularx}
+    \caption{Example from Contrast Dataset: High Confidence Error}
+    \label{tab:Annot1}
+\end{table}
 
-\section{Experiments}
-\subsection{SNLI}
+Next we added in low confidence errors where similar to before, the original pairing as included along with another which either attempted to clarify the same label, or pushed it further to get the model to recognize it as a different classification.
+\begin{table}[h!]
+    \centering
+    \begin{tabularx}{0.45\textwidth} { 
+  | >{\raggedright\arraybackslash}X 
+  | >{\raggedright\arraybackslash}X | }
+    \hline
+        Premise & Two Asian women talking and having drinks at a small round table.\\
+        \hline
+        Original Hypothesis & Two ladies are sitting at the bar.\\
+        \hline
+        Hypothesis 1 & Two ladies are sitting at the table.\\
+        \hline
+    \end{tabularx}
+    \caption{Example from Contrast Dataset: Low Confidence Error}
+    \label{tab:Annot1}
+\end{table}
 
-Describe the SNLI dataset (it is balanced) \citealp{dataAug}
+After these initial perturbations, the model errors were evaluated for the confidence level by classification. This resulted in an interesting graphic showing that while both Neutral and Contradiction tapered off as confidence increased, Entailment had a few jumps along the x-axis.
 
-\subsection{Contrastive DataSets}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.5\linewidth]{FigureConfidenceByClass.png}
+    \caption{Confidence by Classification}
+    \label{fig:Confidence1}
+\end{figure}
 
-Cosine similarity used generally to build a contrastive dataset. Intention is to pull similar pairs (entailment) closer together and push opposite pairs (contradictive) further apart.
+Even though the overall trend of the confidence level for Neutral and Contradiction were going in the ideal direction, there were still a few 50\% confidence ratings and significantly more errors in the higher percentages than would indicate the model is learning new connections.  Checking the classification errors from the model against the gold label, it became obvious that the issue was between the two outter edge classes, Entailment and Contradiction.
 
-Contrastive sets are for evaluation to pinpoint weaknesses in the model learning. Have to use this info to figure out how to fix the model.
+\begin{table}[h!]
+    \centering
+    \begin{tabularx}{0.45\textwidth}{
+  | >{\raggedright\arraybackslash}X 
+  | >{\centering\arraybackslash}X
+  | >{\raggedright\arraybackslash}X | }
+    \hline
+        & Gold Label & Prediction \\
+        \hline
+        Neutral & 462 & 461 \\
+        \hline
+        Entailment & 334 & 270 \\
+        \hline
+        Contradiction & 263 & 328 \\
+        \hline
+    \end{tabularx}
+    \caption{Class Number: Gold vs Model}
+    \label{tab:ClassCount}
+\end{table}
 
-Data augmentation with this contrastive set used to fine-tune the model.
-Add chart that shows accuracy with snli vs accuracy with contrast set (two bars just 89.7\% and 44.5\%)
+Given this new information, additions to the Contrast set were created from filtered errors where the model predicted either Entailment or Contradiction, completely opposite the gold label.
+\begin{table}[h!]
+    \centering
+    \begin{tabularx}{0.45\textwidth} { 
+  | >{\raggedright\arraybackslash}X 
+  | >{\raggedright\arraybackslash}X | }
+    \hline
+        Premise & A brown dog with a blue muzzle is running on green grass.\\
+        \hline
+        Original Hypothesis & A dog is wearing a green muzzle on blue grass.\\
+        \hline
+        Hypothesis 1 & A dog is wearing a green grass on blue muzzle.\\
+        \hline
+        Hypothesis 2 & A dog is running a green grass in blue muzzle.\\
+        \hline
+    \end{tabularx}
+    \caption{Example from Contrast Dataset}
+    \label{tab:AnnotationOfContrastSet}
+\end{table}
 
-I'm looking for increased accuracy on the contrast set after the retraining.
-
-Took an snli trained (5 epochs, full dataset), trained on a small contrast dataset (61 elements from original failed predictions).  Achieved a 78\% accuracy on snli, but increased the output of the contrast set to 72.6\%
-
-retrain on 10k samples of snli accuracy on snli is: 89.8\%
-retrain on contrast\_data.jsonl with lr of 1e-6, eval on snli: 89.87\%  contrast: 77.4
-
-Added to contrast set with small confidence pairs. Retrained on contrast set, then on snli subset to refresh. SNLI accuracy now at 89.1\% 49 on contrast
-After retrain on contrast, contrast at 79.3 snli at 89.4\%
+Upon the training refresh and evaluation with these additions, while the overall accuracy didn't increase, although the contrast accuracy and the GLUE:MNLI benchmark increased, there was a marked change in the confidence of the model.
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.5\linewidth]{Figure_confByClass3.png}
+    \caption{Confidence per Class, Expanded Contrast Set}
+    \label{fig:Confidence3}
+\end{figure}
+The significant drop in confidence values indicates the model is breaking from the artifacts it learned initially and moving toward more true inference of more complex language.
 
 \section{Conclusion}
-
+The ELECTRA small model, pre-trained as a Replacement Token Detection model, and fine tuned on the SNLI dataset for Sentence Classification is fairly accurate in the test bed, but does not demonstrate such success in a real world test environment. The model clearly learned data artifacts which allowed it to classify sentence pairs sometimes without even evaluating the premise, other times by seeing consistent word pairs between premise and hypothesis even though they were in a different order changing the meaning of the sentence.
+Performing evaluation on the model errors with known Data Artifacts, and including Confidence scores to help identify where the model was most able to be perturbed in the correct direction lead to a Contrast Dataset which was able to decrease the model's reliance on said artifacts without degrading accuracy on the original test set.
+We believe that with more work utilizing Cosine Similarity to create a complete Contrast Dataset, and performing additional fine tuning the parameters for the model such as learning rate, training epochs, etc, ELECTRA small could be improved to increased performance in a real world test.
 \bibliographystyle{apalike}
 \bibliography{references}
-%\end{multicols*}
 
 \end{document}
