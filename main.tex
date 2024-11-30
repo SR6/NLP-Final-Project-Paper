@@ -167,7 +167,7 @@ In order to identify where the model was having difficulty discerning classifica
         \hline
         Gold Label & 1 \\
         \hline
-        Predicted Scores & 0.8896671533584595, -0.29746633768081665, -0.7488353848457336\\
+        Predicted Scores & 0.8896671, -0.29746633, -0.7488353\\
         \hline
         Predicted Label & 0\\
         \hline
@@ -198,11 +198,11 @@ Next, we calculated the confidence for each error and included it in the output 
         \hline
         Gold Label & 1 \\
         \hline
-        Predicted Scores & 0.8896671533584595, -0.29746633768081665, -0.7488353848457336\\
+        Predicted Scores & 0.8896671, -0.29746633, -0.7488353\\
         \hline
         Predicted Label & 0\\
         \hline
-        confidence & 0.20348247818855375\\
+        confidence & 0.20348247\\
         \hline
     \end{tabularx}
     \caption{Information saved from Model Errors included Confidence Scores}
@@ -422,7 +422,7 @@ Given this new information, additions to the Contrast set were created from filt
 Upon the training refresh and evaluation with these additions, while the overall accuracy did not increase, the contrast accuracy and the GLUE:MNLI benchmark did increase. There was a marked change in the calculated confidence of the model. Overall the model became much less confident on the errors as show in Figure \ref{fig:Confidence3}.
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.8\linewidth]{Figure_confByClass3.png}
+    \includegraphics[width=0.85\linewidth]{Figure_confByClass3.png}
     \caption{Confidence per Class, Expanded Contrast Set}
     \label{fig:Confidence3}
 \end{figure}
